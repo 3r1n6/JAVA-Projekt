@@ -20,6 +20,18 @@ public class Main {
 
             System.out.println(jsonElement.toString());
 
+            JsonArray booksArray = jsonElement.getAsJsonObject().getAsJsonArray("books");
+            for (JsonElement bookElement : booksArray) {
+                JsonObject book = bookElement.getAsJsonObject();
+                String id = book.get("id").getAsString();
+                String title = book.get("title").getAsString();
+                String text = book.get("text").getAsString();
+
+
+                BookAnalysis analysis = new BookAnalysis(id, title, text);
+                System.out.println(analysis);
+            }
+
 
         } catch (Exception e) {
             e.printStackTrace();
