@@ -15,10 +15,14 @@ public class BookAnalysis {
         this.text = text;
     }
 
-    //Find the total number of words
+    //Find the total number of words (changed)
     public int getWordCount() {
-        return text.split("\\s+").length;
+        if (text == null || text.trim().isEmpty()) {
+            return 0; // Fix: Make sure the null values are considered
+        }
+        return text.trim().split("\\s+").length;
     }
+
 
     //Find the total number of words not including the stop words
     public int getMainWordCount() {
