@@ -4,6 +4,12 @@ import com.google.gson.*;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 
 public class Main {
@@ -36,5 +42,33 @@ public class Main {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        List<String[]> books = Arrays.asList(
+                new String[]{"1", "Book One", "Das ist ein Buch. Mensch ist wichtig."},
+                new String[]{"2", "Book Two", "Ein weiteres Buch mit Menschen und Ideen."},
+                new String[]{"3", "Book Three", "Das Leben eines Menschen ist bedeutend."}
+        );
+
+        // Executor Service with a fixed thread pool
+        ExecutorService executor = Executors.newFixedThreadPool(3);
+
+        // Submit tasks
+        List<Future<BookAnalysis>> futures = books.stream()
+                .map(book -> new BookAnalysisTask(book[0], book[1], book[2]))
+                .map(executor::submit)
+                .toList();
+
+        // Retrieve results
+        for (Future<BookAnalysis> future : futures) {
+            try {
+                BookAnalysis analysis = future.get(); // Blocking call, waits for the result
+                System.out.println(analysis);
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
+
+        // Shutdown the executor
+        executor.shutdown();
     }
 }
