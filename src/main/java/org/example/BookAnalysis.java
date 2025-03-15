@@ -24,11 +24,19 @@ public class BookAnalysis {
     }
 
 
-    //Find the total number of words not including the stop words
+    //Find the total number of words not including the stop words (changed)
     public int getMainWordCount() {
-        return (int) Arrays.stream(text.split("\\s+"))
-                .filter(word -> !STOP_WORDS.contains(word.toLowerCase()))
+        if (text == null || text.trim().isEmpty()) {
+            return 0; // Ensure empty or whitespace-only text returns 0
+        }
+
+        return (int) Arrays.stream(text.trim().split("\\s+"))
+                .map(word -> word.replaceAll("^[^a-zA-ZäöüÄÖÜß]+|[^a-zA-ZäöüÄÖÜß]+$", "")) // Remove other characters
+                .map(String::toLowerCase)
+                .filter(word -> !word.isEmpty())
+                .filter(word -> !STOP_WORDS.contains(word)) // Fix: Exclude stop words correctly
                 .count();
+
     }
 
     //Find the number of the word Mensch
