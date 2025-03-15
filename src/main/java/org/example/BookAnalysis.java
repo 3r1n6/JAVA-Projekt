@@ -39,9 +39,9 @@ public class BookAnalysis {
 
     }
 
-    //Find the number of the word Mensch
+    //Find the number of the word Mensch (changed)
     public int getMenschCount() {
-        Matcher matcher = Pattern.compile("mensch", Pattern.CASE_INSENSITIVE).matcher(text);
+        Matcher matcher = Pattern.compile("\\bmensch\\b", Pattern.CASE_INSENSITIVE).matcher(text); // Fix: Regex changed
         int count = 0;
         while (matcher.find()) count++;
         return count;
