@@ -47,10 +47,10 @@ public class BookAnalysis {
         return count;
     }
 
-    //Find all the words longer than 18 characters
+    //Find all the words longer than 18 characters (changed)
     public List<String> getLongWords() {
         List<String> longWords = new ArrayList<>();
-        Matcher matcher = Pattern.compile("\\b\\w{19,}\\b").matcher(text);
+        Matcher matcher = Pattern.compile("\\b[a-zA-ZäöüÄÖÜß]{19,}\\b").matcher(text); // Fix: Include special German letters
         while (matcher.find()) longWords.add(matcher.group());
         return longWords;
     }
