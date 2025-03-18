@@ -1,16 +1,21 @@
 package org.example;
 
 import com.google.gson.*;
+
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Arrays;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
 
 public class Main {
     public static void main(String[] args) {
@@ -23,52 +28,73 @@ public class Main {
             // Read the JSON Data from the link
             JsonElement jsonElement = JsonParser.parseReader(new InputStreamReader(connection.getInputStream()));
 
+            System.out.println(jsonElement.toString());  // Optional: Print the entire JSON for inspection
 
-            System.out.println(jsonElement.toString());
-
+            // Process each book from the JSON response
             JsonArray booksArray = jsonElement.getAsJsonObject().getAsJsonArray("books");
+            List<BookAnalysis> analyses = new ArrayList<>();
+
             for (JsonElement bookElement : booksArray) {
                 JsonObject book = bookElement.getAsJsonObject();
                 String id = book.get("id").getAsString();
                 String title = book.get("title").getAsString();
                 String text = book.get("text").getAsString();
 
-
+                // Create a BookAnalysis object for each book
                 BookAnalysis analysis = new BookAnalysis(id, title, text);
+                System.out.println(analysis);  // Print the analysis of each book
+
+                // Add the analysis to the list
+                analyses.add(analysis);
+            }
+
+            // Optionally, print all book analysis results
+            System.out.println("All Book Analyses: ");
+            for (BookAnalysis analysis : analyses) {
                 System.out.println(analysis);
             }
 
+            // After collecting all book analyses, write the results to CSV
+            writeResultsToCSV(analyses);
 
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
 
-        List<String[]> books = Arrays.asList(
-                new String[]{"1", "Book One", "Das ist ein Buch. Mensch ist wichtig."},
-                new String[]{"2", "Book Two", "Ein weiteres Buch mit Menschen und Ideen."},
-                new String[]{"3", "Book Three", "Das Leben eines Menschen ist bedeutend."}
-        );
+    private static void writeResultsToCSV(List<BookAnalysis> analyses) {
+        Path path = Paths.get("results.csv");
 
-        // Executor Service with a fixed thread pool
-        ExecutorService executor = Executors.newFixedThreadPool(3);
-
-        // Submit tasks
-        List<Future<BookAnalysis>> futures = books.stream()
-                .map(book -> new BookAnalysisTask(book[0], book[1], book[2]))
-                .map(executor::submit)
-                .toList();
-
-        // Retrieve results
-        for (Future<BookAnalysis> future : futures) {
-            try {
-                BookAnalysis analysis = future.get(); // Blocking call, waits for the result
-                System.out.println(analysis);
-            } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
+        try {
+            // Ensure the file exists before writing
+            if (Files.notExists(path)) {
+                Files.createFile(path);
             }
-        }
 
-        // Shutdown the executor
-        executor.shutdown();
+            // Prepare CSV header and data
+            List<String> lines = new ArrayList<>();
+            lines.add("id\ttitle\tword_count\tmain_word_count\tmensch_count\tlong_words");  // Header
+
+            for (BookAnalysis analysis : analyses) {
+                // Debugging: Print what is being written
+                System.out.println("Writing to CSV: " + analysis.getId() + " | " + analysis.getTitle());
+
+                lines.add(analysis.getId() + "\t" +
+                        analysis.getTitle() + "\t" +
+                        analysis.getWordCount() + "\t" +
+                        analysis.getMainWordCount() + "\t" +
+                        analysis.getMenschCount() + "\t" +
+                        String.join(", ", analysis.getLongWords()));  // Convert list to string
+            }
+
+            // Write to file using Java NIO
+            Files.write(path, lines, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+
+            System.out.println("Results successfully written to: " + path.toAbsolutePath());
+
+        } catch (IOException e) {
+            System.err.println("Error writing to file: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }
