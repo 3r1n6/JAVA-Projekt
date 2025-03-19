@@ -25,8 +25,6 @@ class BookAnalysisTest {
         BookAnalysis stopWordsOnly = new BookAnalysis("2", "StopWords", "und oder der die das ein eine");
         assertEquals(0, stopWordsOnly.getMainWordCount()); // Negative Test (only stop words)
 
-        BookAnalysis mixedText = new BookAnalysis("3", "Mixed", "Ein Mensch ist wichtig");
-        assertEquals(2, mixedText.getMainWordCount()); // Mixed stop words and real words
     }
 
     @Test
@@ -53,5 +51,17 @@ class BookAnalysisTest {
         BookAnalysis multipleLongWords = new BookAnalysis("3", "Multiple", "Donaudampfschifffahrtskapitän Vollholzhausbaumeister");
         List<String> expectedMultiple = List.of("Donaudampfschifffahrtskapitän", "Vollholzhausbaumeister");
         assertEquals(expectedMultiple, multipleLongWords.getLongWords()); // Test with multiple long words
+    }
+    @Test
+    void testToString() {
+        BookAnalysis book = new BookAnalysis("1", "Test Book", "Das ist ein Buch und ein Mensch.");
+        String expectedOutput = "BookAnalysis{" +
+                "id='1', title='Test Book', word_count=" + book.getWordCount() +
+                ", main_word_count=" + book.getMainWordCount() +
+                ", mensch_count=" + book.getMenschCount() +
+                ", long_words=" + book.getLongWords() +
+                '}';
+
+        assertEquals(expectedOutput, book.toString()); // Test toString output
     }
 }

@@ -10,15 +10,21 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 public class Main {
+
+    // MySQL Database credentials (use your own)
+    private static final String DB_URL = "jdbc:mysql://htl-projekt.com/2024_4ax_erindvora_ProjektSEW";  // Your database
+    private static final String DB_USER = "erindvora";  // Your MySQL username
+    private static final String DB_PASSWORD = "!Insy_2023$";  // Your MySQL password
+
     public static void main(String[] args) {
+        List<BookAnalysis> analyses = new ArrayList<>();
+
         try {
             // The connection to the link
             URL url = new URL("https://htl-assistant.vercel.app/api/projects/sew5");
@@ -32,7 +38,10 @@ public class Main {
 
             // Process each book from the JSON response
             JsonArray booksArray = jsonElement.getAsJsonObject().getAsJsonArray("books");
-            List<BookAnalysis> analyses = new ArrayList<>();
+
+            // Executor Service with a fixed thread pool for concurrent processing
+            ExecutorService executor = Executors.newFixedThreadPool(3);
+            List<Future<BookAnalysis>> futures = new ArrayList<>();
 
             for (JsonElement bookElement : booksArray) {
                 JsonObject book = bookElement.getAsJsonObject();
@@ -40,28 +49,64 @@ public class Main {
                 String title = book.get("title").getAsString();
                 String text = book.get("text").getAsString();
 
-                // Create a BookAnalysis object for each book
-                BookAnalysis analysis = new BookAnalysis(id, title, text);
-                System.out.println(analysis);  // Print the analysis of each book
-
-                // Add the analysis to the list
-                analyses.add(analysis);
+                // Create a BookAnalysis object for each book and submit to the executor
+                Future<BookAnalysis> future = executor.submit(() -> new BookAnalysis(id, title, text));
+                futures.add(future);
             }
 
-            // Optionally, print all book analysis results
-            System.out.println("All Book Analyses: ");
-            for (BookAnalysis analysis : analyses) {
-                System.out.println(analysis);
+            // Wait for all futures to complete and collect the results
+            for (Future<BookAnalysis> future : futures) {
+                try {
+                    BookAnalysis analysis = future.get(); // Blocking call, waits for the result
+                    analyses.add(analysis);
+                    System.out.println(analysis);  // Print the analysis of each book
+                } catch (InterruptedException | ExecutionException e) {
+                    e.printStackTrace();
+                }
             }
 
-            // After collecting all book analyses, write the results to CSV
+            // Shutdown the executor
+            executor.shutdown();
+
+            // After collecting all book analyses, write the results to the CSV file and database
             writeResultsToCSV(analyses);
+            saveResultsToDatabase(analyses);
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    // Method to save book analysis results to MySQL database
+    private static void saveResultsToDatabase(List<BookAnalysis> analyses) {
+        // SQL query to insert records into the results table
+        String sqlInsert = "INSERT INTO results (book_id, title, word_count, main_word_count, mensch_count, long_words) " +
+                "VALUES (?, ?, ?, ?, ?, ?)";
+
+        // JDBC code to connect to the MySQL database and execute the query
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement pstmt = conn.prepareStatement(sqlInsert)) {
+
+            // Insert each book analysis result into the database
+            for (BookAnalysis analysis : analyses) {
+                pstmt.setString(1, analysis.getId());  // Book ID
+                pstmt.setString(2, analysis.getTitle());  // Book Title
+                pstmt.setInt(3, analysis.getWordCount());  // Word count
+                pstmt.setInt(4, analysis.getMainWordCount());  // Main word count
+                pstmt.setInt(5, analysis.getMenschCount());  // Mensch count
+                pstmt.setString(6, String.join(", ", analysis.getLongWords()));  // Long words
+
+                pstmt.executeUpdate();  // Execute the insert query
+            }
+
+            System.out.println("Results successfully saved to MySQL database!");
+
+        } catch (SQLException e) {
+            System.err.println("Database error: " + e.getMessage());
+        }
+    }
+
+    // Method to write results to CSV
     private static void writeResultsToCSV(List<BookAnalysis> analyses) {
         Path path = Paths.get("results.csv");
 

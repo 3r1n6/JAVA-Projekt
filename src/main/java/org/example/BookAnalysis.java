@@ -67,4 +67,12 @@ public class BookAnalysis {
                 ", long_words=" + getLongWords() +
                 '}';
     }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getTitle() {
+        return title;
+    }
 }
