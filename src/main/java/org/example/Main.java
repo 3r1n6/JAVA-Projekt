@@ -40,10 +40,10 @@ public class Main {
     // Logger setup
     private static final Logger logger = Logger.getLogger(Main.class.getName());
 
-    // MySQL Database credentials (use your own)
+    // MySQL Database connection
     private static final String DB_URL = "jdbc:mysql://htl-projekt.com:3306/2024_4ax_erindvora_ProjektSEW";  // Your database
-    private static final String DB_USER = "erindvora";  // Your MySQL username
-    private static final String DB_PASSWORD = "!Insy_2023$";  // Your MySQL password
+    private static final String DB_USER = "erindvora";  // username
+    private static final String DB_PASSWORD = "!Insy_2023$";  // password
 
     public static void main(String[] args) {
         // Set logging level to FINE to capture all logs
