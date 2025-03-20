@@ -10,12 +10,38 @@ import java.util.concurrent.*;
 import java.util.logging.*;
 
 public class Main {
+    /**
+     * Main class that handles the entire workflow of fetching data from a remote API,
+     * analyzing the data, saving the results to a MySQL database, writing them to a CSV file,
+     * and sending the results as a POST request to an external API.
+     *
+     * This program performs the following tasks:
+     * 1. Fetches a JSON response from a remote API that contains book data.
+     * 2. For each book, it processes the content using a multi-threaded approach, which includes:
+     *    - Word count analysis
+     *    - Main word count analysis (excluding stop words)
+     *    - Count of the word "mensch"
+     *    - Identification of long words (greater than 18 characters)
+     * 3. Stores the results of the book analysis into a MySQL database.
+     * 4. Saves the analysis results into a CSV file.
+     * 5. Sends the results (along with execution time and UUID) as a POST request to an external API using Basic Authentication.
+     *
+     * The program uses Java's concurrency mechanisms (ExecutorService and Future) to process the books in parallel,
+     * which helps to speed up the analysis of large datasets.
+     *
+     * The program logs important events throughout its execution, such as API connections, data processing, and database insertions.
+     * It also calculates the total execution time and logs it for performance tracking.
+     *
+     * @author Erind Vora
+     * @version 2.3.1
+     *
+     */
 
     // Logger setup
     private static final Logger logger = Logger.getLogger(Main.class.getName());
 
     // MySQL Database credentials (use your own)
-    private static final String DB_URL = "jdbc:mysql://htl-projekt.com:33060/2024_4ax_erindvora_ProjektSEW";  // Your database
+    private static final String DB_URL = "jdbc:mysql://htl-projekt.com:3306/2024_4ax_erindvora_ProjektSEW";  // Your database
     private static final String DB_USER = "erindvora";  // Your MySQL username
     private static final String DB_PASSWORD = "!Insy_2023$";  // Your MySQL password
 
@@ -40,8 +66,13 @@ public class Main {
             System.out.println(jsonElement.toString());
             logger.fine("Received JSON: " + jsonElement.toString());
 
+            // Extract UUID from the GET request response
+            JsonObject responseObject = jsonElement.getAsJsonObject();
+            String uuid = responseObject.get("uuid").getAsString();  // Ensure "uuid" is the correct key in the JSON
+            logger.info("Extracted UUID: " + uuid);
+
             // Process each book from the JSON response
-            JsonArray booksArray = jsonElement.getAsJsonObject().getAsJsonArray("books");
+            JsonArray booksArray = responseObject.getAsJsonArray("books");
 
             // Executor Service with a fixed thread pool for concurrent processing
             ExecutorService executor = Executors.newFixedThreadPool(3);
@@ -79,7 +110,6 @@ public class Main {
             saveResultsToDatabase(analyses);
 
             // Get the UUID and execution duration (for POST request)
-            String uuid = "2149b423-487a-4f56-bc91-a1495c0d0f08";  // Replace with actual UUID
             long endTime = System.currentTimeMillis();  // End measuring time
             long duration = endTime - startTime;  // Calculate the duration in milliseconds
             logger.info("Total execution time: " + duration + " milliseconds");
@@ -99,6 +129,7 @@ public class Main {
         String sqlInsert = "INSERT INTO results (book_id, title, word_count, main_word_count, mensch_count, long_words) " +
                 "VALUES (?, ?, ?, ?, ?, ?)";
 
+        // JDBC code to connect to the MySQL database and execute the query
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
              PreparedStatement pstmt = conn.prepareStatement(sqlInsert)) {
 
@@ -126,7 +157,6 @@ public class Main {
             e.printStackTrace();
         }
     }
-
 
     // Method to write results to CSV
     private static void writeResultsToCSV(List<BookAnalysis> analyses) {
@@ -181,7 +211,7 @@ public class Main {
 
             // Create JSON body
             JsonObject resultObject = new JsonObject();
-            resultObject.addProperty("uuid", uuid);
+            resultObject.addProperty("uuid", uuid);  // Use the extracted UUID here
             resultObject.addProperty("duration", duration);
             resultObject.addProperty("name", "Erind Vora");  // Replace with actual name
             resultObject.addProperty("url", "https://github.com/3r1n6/JAVA-Projekt");  // Replace with your GitHub project URL

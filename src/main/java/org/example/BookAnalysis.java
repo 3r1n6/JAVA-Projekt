@@ -3,6 +3,16 @@ package org.example;
 import java.util.*;
 import java.util.regex.*;
 
+/**
+ * BookAnalysis class performs an analysis of a book's content.
+ * It calculates the total number of words, counts the main words (excluding stop words),
+ * counts the occurrences of the word "Mensch", and identifies long words.
+ *
+ * @author Erind Vora
+ * @version 2.1.0
+ *
+ */
+
 public class BookAnalysis {
     private String id, title, text;
 
